@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIG-HIDRO · Simulación de hidrocarburos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v8.2.0/ol.css">
+    <script src="https://cdn.jsdelivr.net/npm/ol@v8.2.0/dist/ol.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+
+    <header class="topbar">
+        <div class="brand">
+            <div class="logo">⚓</div>
+            <div>
+                <div class="eyebrow">Simulación de derrame</div>
+                <div class="brand-name">SIG-HIDRO</div>
+            </div>
+        </div>
+        <div class="top-cell">
+            <div class="eyebrow">Mapa base</div>
+            <div class="top-value">OpenLayers · EPSG:3857</div>
+        </div>
+        <div class="top-cell">
+            <div class="eyebrow">Partículas</div>
+            <div class="top-value" id="particle-count">—</div>
+        </div>
+        <div class="top-cell clock">
+            <div class="eyebrow">Hora del modelo</div>
+            <div class="top-value big">T+<span id="hour-display">0</span> h</div>
+        </div>
+    </header>
+
+    <aside class="panel">
+        <div class="panel-head">
+            <div class="eyebrow">Parámetros de visualización</div>
+            <div class="panel-sub">Simulación de hidrocarburos</div>
+        </div>
+
+        <section class="group">
+            <div class="group-title"><span class="chip">01</span> Tiempo</div>
+            <label class="field-label" for="speed-input">Velocidad (ms por frame)</label>
+            <div class="input-wrap">
+                <input type="number" id="speed-input" value="1000" step="100" min="100">
+                <span class="unit">ms</span>
+            </div>
+        </section>
+
+        <section class="group">
+            <div class="group-title"><span class="chip">02</span> Partículas</div>
+            <div class="row-between">
+                <label class="field-label" for="size-slider">Tamaño</label>
+                <span id="size-display" class="value-tag">6px</span>
+            </div>
+            <input type="range" id="size-slider" min="2" max="15" step="1" value="6">
+        </section>
+
+        <div class="panel-foot">Usa el mouse para navegar en el mapa (pan / zoom).</div>
+    </aside>
+
+    <main class="map-wrap">
+        <div id="map"></div>
+        <div class="legend">
+            <div class="eyebrow">Partículas de hidrocarburo</div>
+            <div class="legend-row"><span class="dot"></span> Posición simulada</div>
+        </div>
+    </main>
+
+    <footer class="timeline">
+        <div class="play-block">
+            <button id="btn-play" class="btn-play" aria-label="Reproducir o pausar">Reproducir</button>
+        </div>
+        <div class="slider-block">
+            <div class="row-between">
+                <span class="eyebrow">Línea de tiempo</span>
+                <span class="eyebrow">Hora actual</span>
+            </div>
+            <input type="range" id="time-slider" min="0" max="3" value="0">
+        </div>
+    </footer>
+
+</div>
+<script src="codigo.js"></script>
+</body>
+</html>
