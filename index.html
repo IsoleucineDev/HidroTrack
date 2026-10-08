@@ -3,88 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SIG-HIDRO · Simulación de hidrocarburos</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <title>Mapa de México</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Librería svg-pan-zoom para manejar el zoom y arrastre de forma fluida -->
+    <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
+
+    <!-- OpenLayers CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v8.2.0/ol.css">
+    <!-- OpenLayers JS -->
     <script src="https://cdn.jsdelivr.net/npm/ol@v8.2.0/dist/ol.js"></script>
+
     <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-<div class="app">
+<body class="flex h-screen w-screen bg-slate-900 text-slate-200">
 
-    <header class="topbar">
-        <div class="brand">
-            <div class="logo">⚓</div>
-            <div>
-                <div class="eyebrow">Simulación de derrame</div>
-                <div class="brand-name">SIG-HIDRO</div>
+    <!-- Panel Lateral de Controles -->
+    <aside class="w-80 bg-slate-800 border-r border-slate-700 flex flex-col shadow-2xl z-10 flex-shrink-0 relative">
+        <div class="p-6 border-b border-slate-700">
+            <h1 class="text-xl font-bold text-white flex items-center gap-2">Simulación de hidrocarburos</h1>
+            <p class="text-xs text-slate-400 mt-1">Mapa por OpenLayers</p>
+        </div>
+
+        <!-- Controles de Animación -->
+        <div class="p-6 flex-grow flex flex-col gap-6 overflow-y-auto custom-scrollbar">
+
+            <div class="flex flex-col gap-4">
+                <h3 class="text-white font-medium text-lg border-b border-slate-700 pb-2">Controles de Tiempo</h3>
+
+                <button id="btn-play" class="bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-500 transition-colors w-full font-semibold shadow-lg">
+                    Reproducir
+                </button>
+
+                <div class="flex flex-col gap-2 text-sm text-slate-300 bg-slate-900 p-4 rounded-lg border border-slate-700">
+                    <div class="flex justify-between items-center mb-1">
+                        <label for="time-slider" class="font-medium">Hora actual:</label>
+                        <span id="hour-display" class="text-indigo-400 font-bold text-lg">0</span>
+                    </div>
+                    <input type="range" id="time-slider" min="0" max="3" value="0" class="w-full accent-indigo-500 cursor-pointer">
+                </div>
+
+                <div class="flex flex-col gap-2 text-sm text-slate-300">
+                    <label for="speed-input" class="font-medium">Velocidad (ms por frame):</label>
+                    <input type="number" id="speed-input" value="1000" step="100" class="w-full bg-slate-900 border border-slate-600 text-white p-2.5 rounded-lg focus:border-indigo-500 focus:outline-none transition-colors">
+                </div>
             </div>
-        </div>
-        <div class="top-cell">
-            <div class="eyebrow">Mapa base</div>
-            <div class="top-value">OpenLayers · EPSG:3857</div>
-        </div>
-        <div class="top-cell">
-            <div class="eyebrow">Partículas</div>
-            <div class="top-value" id="particle-count">—</div>
-        </div>
-        <div class="top-cell clock">
-            <div class="eyebrow">Hora del modelo</div>
-            <div class="top-value big">T+<span id="hour-display">0</span> h</div>
-        </div>
-    </header>
 
-    <aside class="panel">
-        <div class="panel-head">
-            <div class="eyebrow">Parámetros de visualización</div>
-            <div class="panel-sub">Simulación de hidrocarburos</div>
-        </div>
+            <!-- Controles de Visualización -->
+            <div class="flex flex-col gap-4 mt-2">
+                <h3 class="text-white font-medium text-lg border-b border-slate-700 pb-2">Visualización</h3>
 
-        <section class="group">
-            <div class="group-title"><span class="chip">01</span> Tiempo</div>
-            <label class="field-label" for="speed-input">Velocidad (ms por frame)</label>
-            <div class="input-wrap">
-                <input type="number" id="speed-input" value="1000" step="100" min="100">
-                <span class="unit">ms</span>
+                <div class="flex flex-col gap-2 text-sm text-slate-300">
+                    <div class="flex justify-between items-center">
+                        <label for="size-slider" class="font-medium">Tamaño de Partículas:</label>
+                        <span id="size-display" class="text-slate-400">6px</span>
+                    </div>
+                    <input type="range" id="size-slider" min="2" max="15" step="1" value="6" class="w-full accent-amber-500 cursor-pointer">
+                </div>
             </div>
-        </section>
-
-        <section class="group">
-            <div class="group-title"><span class="chip">02</span> Partículas</div>
-            <div class="row-between">
-                <label class="field-label" for="size-slider">Tamaño</label>
-                <span id="size-display" class="value-tag">6px</span>
+            <div class="flex flex-col gap-2 text-sm text-slate-300">
+                <div class="flex justify-between items-center">
+                    <label for="trail-slider" class="font-medium">Longitud del rastro (horas):</label>
+                    <span id="trail-display" class="text-slate-400">0</span>
+                </div>
+                <input type="range" id="trail-slider" min="0" max="24" step="1" value="0" class="w-full accent-emerald-500 cursor-pointer">
             </div>
-            <input type="range" id="size-slider" min="2" max="15" step="1" value="6">
-        </section>
 
-        <div class="panel-foot">Usa el mouse para navegar en el mapa (pan / zoom).</div>
+
+
+        </div>
+
+        <div class="p-4 bg-slate-900 text-xs text-slate-500 text-center mt-auto border-t border-slate-700">
+            Usa el mouse para navegar en el mapa (pan/zoom).
+        </div>
     </aside>
 
-    <main class="map-wrap">
-        <div id="map"></div>
-        <div class="legend">
-            <div class="eyebrow">Partículas de hidrocarburo</div>
-            <div class="legend-row"><span class="dot"></span> Posición simulada</div>
-        </div>
+    <!-- Contenedor Principal del Mapa -->
+    <main class="flex-grow relative h-full w-full">
+        <div id="map" class="w-full h-full"></div>
     </main>
 
-    <footer class="timeline">
-        <div class="play-block">
-            <button id="btn-play" class="btn-play" aria-label="Reproducir o pausar">Reproducir</button>
-        </div>
-        <div class="slider-block">
-            <div class="row-between">
-                <span class="eyebrow">Línea de tiempo</span>
-                <span class="eyebrow">Hora actual</span>
-            </div>
-            <input type="range" id="time-slider" min="0" max="3" value="0">
-        </div>
-    </footer>
+    <script src="codigo.js"></script>
 
-</div>
-<script src="codigo.js"></script>
 </body>
 </html>

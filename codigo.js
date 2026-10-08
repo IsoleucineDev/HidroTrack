@@ -4,10 +4,7 @@ let particulasData = null;
 
 // Capa base: Mapa de OpenStreetMap con estilo oscuro (usando filtro CSS luego o CartoDB Dark Matter si es posible, aquí usaremos OSM estándar)
 const baseLayer = new ol.layer.Tile({
-    source: new ol.source.XYZ({
-        url: 'https://{a-d}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-        attributions: '© OpenStreetMap, © CARTO'
-    })
+    source: new ol.source.OSM()
 });
 
 // Fuente y Capa Vectorial para las partículas
@@ -21,15 +18,26 @@ const vectorLayer = new ol.layer.Vector({
         return new ol.style.Style({
             image: new ol.style.Circle({
                 radius: size,
-                fill: new ol.style.Fill({ color: 'rgba(217, 67, 79, 0.85)' }), // bg-amber-400
-                stroke: new ol.style.Stroke({ color: 'rgba(255, 255, 255, 0.9)', width: 1.5 })
+                fill: new ol.style.Fill({ color: 'rgba(251, 191, 36, 0.9)' }), // bg-amber-400
+                stroke: new ol.style.Stroke({ color: 'rgba(180, 83, 9, 1)', width: 2 }) // borde más oscuro
             })
         });
     }
 });
 
-// Configuración de la vista (Centrado en México)
-// Coordenadas aproximadas: lon -92, lat 20
+// Fuente y Capa Vectorial para los rastros
+const trailSource = new ol.source.Vector();
+const trailLayer = new ol.layer.Vector({
+    source: trailSource,
+    style: new ol.style.Style({
+        stroke: new ol.style.Stroke({
+            color: 'rgba(251, 191, 36, 0.4)', // Mismo color pero más transparente
+            width: 2
+        })
+    })
+});
+
+// 1. Configuración de la vista (Centrado en México) - MOVER ARRIBA
 const view = new ol.View({
     center: ol.proj.fromLonLat([-92.0, 20.0]),
     zoom: 7,
@@ -37,11 +45,17 @@ const view = new ol.View({
     maxZoom: 18
 });
 
+// 2. Inicialización del Mapa - AHORA YA CONOCE "view"
 const map = new ol.Map({
     target: 'map',
-    layers: [baseLayer, vectorLayer],
+    layers: [baseLayer, trailLayer, vectorLayer],
     view: view
 });
+
+const trailSlider = document.getElementById('trail-slider');
+const trailDisplay = document.getElementById('trail-display');
+let trailFeatures = []; // Array para guardar las geometrías de las líneas
+
 
 // Filtro oscuro opcional para el mapa base para que coincida con el tema (usando eventos de renderizado)
 baseLayer.on('postrender', function (e) {
@@ -79,12 +93,19 @@ function actualizarMapa(indiceHora) {
 
     if (features.length === 0) {
         puntos.forEach(punto => {
+            // Puntos existentes
             const coord = ol.proj.fromLonLat([punto.lon, punto.lat]);
             const feature = new ol.Feature({ geometry: new ol.geom.Point(coord) });
             features.push(feature);
             vectorSource.addFeature(feature);
+
+            // NUEVO: Inicializar rastro vacío
+            const trailFeature = new ol.Feature({ geometry: new ol.geom.LineString([]) });
+            trailFeatures.push(trailFeature);
+            trailSource.addFeature(trailFeature);
         });
-    } else {
+    } 
+    else {
         puntos.forEach((punto, index) => {
             if (features[index]) {
                 const coord = ol.proj.fromLonLat([punto.lon, punto.lat]);
@@ -98,22 +119,47 @@ function interpolarPuntos(progreso) {
     const puntosInicio = particulasData.lista[startIndice].particulas;
     const puntosFin = particulasData.lista[endIndice].particulas;
 
+    // Obtener la longitud deseada del rastro desde el slider
+    const trailLength = parseInt(trailSlider.value);
+
     features.forEach((feature, index) => {
         const lonInicio = puntosInicio[index].lon;
         const latInicio = puntosInicio[index].lat;
         const lonFin = puntosFin[index].lon;
         const latFin = puntosFin[index].lat;
 
-        // Fórmula de interpolación lineal
+        // Fórmula de interpolación lineal para el punto actual
         const lonActual = lonInicio + (lonFin - lonInicio) * progreso;
         const latActual = latInicio + (latFin - latInicio) * progreso;
 
-        const coord = ol.proj.fromLonLat([lonActual, latActual]);
-        feature.setGeometry(new ol.geom.Point(coord));
+        const coordActual = ol.proj.fromLonLat([lonActual, latActual]);
+        feature.setGeometry(new ol.geom.Point(coordActual));
+
+        // --- NUEVA LÓGICA PARA EL RASTRO ---
+        if (trailLength > 0) {
+            let trailCoords = [];
+            // Determinar desde qué índice de tiempo empezar el rastro (sin bajar de 0)
+            let startIndexTrail = Math.max(0, startIndice - trailLength);
+
+            // 1. Agregar los puntos históricos al arreglo de coordenadas
+            for (let i = startIndexTrail; i <= startIndice; i++) {
+                let pt = particulasData.lista[i].particulas[index];
+                trailCoords.push(ol.proj.fromLonLat([pt.lon, pt.lat]));
+            }
+
+            // 2. Agregar el punto actual (interpolado) al final del rastro
+            trailCoords.push(coordActual);
+
+            // 3. Actualizar la geometría de la línea
+            trailFeatures[index].setGeometry(new ol.geom.LineString(trailCoords));
+        } else {
+            // Si el slider está en 0, vaciamos la línea
+            trailFeatures[index].setGeometry(new ol.geom.LineString([]));
+        }
     });
 }
 
-// NUEVO: Ciclo de renderizado nativo del navegador para animaciones suaves
+
 function loopAnimacion(timestamp) {
     if (!startTime) startTime = timestamp;
     const progresoCálculo = (timestamp - startTime) / duracion;
@@ -149,6 +195,16 @@ function loopAnimacion(timestamp) {
     }
 }
 
+
+
+
+trailSlider.addEventListener('input', (e) => {
+    trailDisplay.textContent = e.target.value;
+    if (!reproduciendo) {
+        interpolarPuntos(0);
+    }
+});
+
 // 4. Eventos de la Interfaz
 
 // Movimiento manual del slider de tiempo
@@ -176,7 +232,8 @@ btnPlay.addEventListener('click', () => {
         // Pausar
         cancelAnimationFrame(animationId);
         btnPlay.textContent = "Reproducir";
-        btnPlay.classList.remove('playing');
+        btnPlay.classList.replace('bg-rose-600', 'bg-indigo-600');
+        btnPlay.classList.replace('hover:bg-rose-500', 'hover:bg-indigo-500');
         reproduciendo = false;
 
         actualizarMapa(parseInt(slider.value));
@@ -184,7 +241,8 @@ btnPlay.addEventListener('click', () => {
         // Reproducir
         duracion = parseInt(speedInput.value) || 1000;
         btnPlay.textContent = "Pausar";
-        btnPlay.classList.add('playing');
+        btnPlay.classList.replace('bg-indigo-600', 'bg-rose-600');
+        btnPlay.classList.replace('hover:bg-indigo-500', 'hover:bg-rose-500');
         reproduciendo = true;
 
         startIndice = parseInt(slider.value);
@@ -213,7 +271,7 @@ sizeSlider.addEventListener('input', (e) => {
     vectorLayer.changed();
 });
 
-// 5. NUEVO: Carga asíncrona del archivo JSON
+
 fetch('particulas.json')
     .then(response => {
         if (!response.ok) {
@@ -222,16 +280,10 @@ fetch('particulas.json')
         return response.json();
     })
     .then(data => {
-        // Guardamos los datos leídos en la variable global
         particulasData = data;
-
-        // Ahora sí, configuramos el slider con la longitud real de los datos
         slider.max = particulasData.lista.length - 1;
-        slider.step = '0.001'; // Mantenemos el paso decimal para la fluidez
-
-        // Inicializamos el estado 0 al cargar correctamente
+        slider.step = '0.001';
         actualizarMapa(0);
-        document.getElementById('particle-count').textContent = particulasData.lista[0].particulas.length;
     })
     .catch(error => {
         console.error("Error al cargar particulas.json:", error);
