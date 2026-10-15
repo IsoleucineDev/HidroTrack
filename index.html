@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Derrames de hidrocarburos - Campeche</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- OpenLayers CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v8.2.0/ol.css">
+    <!-- OpenLayers JS -->
+    <script src="https://cdn.jsdelivr.net/npm/ol@v8.2.0/dist/ol.js"></script>
+
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="flex h-screen w-screen bg-slate-900 text-slate-200">
+
+    <!-- Panel Lateral de Controles -->
+    <aside class="w-80 bg-slate-800 border-r border-slate-700 flex flex-col shadow-2xl z-10 flex-shrink-0 relative">
+        <div class="p-6 border-b border-slate-700">
+            <h1 class="text-xl font-bold text-white flex items-center gap-2">Simulación de hidrocarburos</h1>
+            <p class="text-xs text-slate-400 mt-1">Sonda de Campeche · OpenLayers</p>
+        </div>
+
+        <!-- Controles de Animación -->
+        <div class="p-6 flex-grow flex flex-col gap-6 overflow-y-auto">
+
+            <!-- Parámetros del derrame -->
+            <div class="flex flex-col gap-3">
+                <h3 class="text-white font-medium text-lg border-b border-slate-700 pb-2">Derrame</h3>
+                <div class="grid grid-cols-2 gap-2 text-sm text-slate-300">
+                    <label class="flex flex-col gap-1">Latitud
+                        <input id="lat-ini" type="number" step="0.01" value="19.85" class="bg-slate-900 border border-slate-600 text-white p-2 rounded-lg"></label>
+                    <label class="flex flex-col gap-1">Longitud
+                        <input id="lon-ini" type="number" step="0.01" value="-90.55" class="bg-slate-900 border border-slate-600 text-white p-2 rounded-lg"></label>
+                    <label class="flex flex-col gap-1">Crudo
+                        <select id="tipo-crudo" class="bg-slate-900 border border-slate-600 text-white p-2 rounded-lg">
+                            <option value="ligero">Ligero</option><option value="medio" selected>Medio</option><option value="pesado">Pesado</option></select></label>
+                    <label class="flex flex-col gap-1">Horas
+                        <input id="horas" type="number" min="1" max="240" value="120" class="bg-slate-900 border border-slate-600 text-white p-2 rounded-lg"></label>
+                    <label class="flex flex-col gap-1 col-span-2">Partículas
+                        <input id="n-particulas" type="number" min="1" max="5000" value="200" class="bg-slate-900 border border-slate-600 text-white p-2 rounded-lg"></label>
+                </div>
+                <button id="btn-simular" class="bg-emerald-600 text-white p-3 rounded-lg hover:bg-emerald-500 transition-colors w-full font-semibold shadow-lg">Simular</button>
+                <p id="status" class="text-xs text-slate-400"></p>
+            </div>
+
+            <div class="flex flex-col gap-4">
+                <h3 class="text-white font-medium text-lg border-b border-slate-700 pb-2">Controles de Tiempo</h3>
+
+                <button id="btn-play" class="bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-500 transition-colors w-full font-semibold shadow-lg">
+                    Reproducir
+                </button>
+
+                <div class="flex flex-col gap-2 text-sm text-slate-300 bg-slate-900 p-4 rounded-lg border border-slate-700">
+                    <div class="flex justify-between items-center mb-1">
+                        <label for="time-slider" class="font-medium">Hora actual:</label>
+                        <span id="hour-display" class="text-indigo-400 font-bold text-lg">0</span>
+                    </div>
+                    <input type="range" id="time-slider" min="0" max="3" value="0" class="w-full accent-indigo-500 cursor-pointer">
+                </div>
+
+                <div class="flex flex-col gap-2 text-sm text-slate-300">
+                    <label for="speed-input" class="font-medium">Velocidad (ms por hora simulada):</label>
+                    <input type="number" id="speed-input" value="1000" step="100" class="w-full bg-slate-900 border border-slate-600 text-white p-2.5 rounded-lg focus:border-indigo-500 focus:outline-none transition-colors">
+                </div>
+            </div>
+
+            <!-- Controles de Visualización -->
+            <div class="flex flex-col gap-4 mt-2">
+                <h3 class="text-white font-medium text-lg border-b border-slate-700 pb-2">Visualización</h3>
+
+                <div class="flex flex-col gap-2 text-sm text-slate-300">
+                    <div class="flex justify-between items-center">
+                        <label for="size-slider" class="font-medium">Tamaño de Partículas:</label>
+                        <span id="size-display" class="text-slate-400">6px</span>
+                    </div>
+                    <input type="range" id="size-slider" min="2" max="15" step="1" value="6" class="w-full accent-amber-500 cursor-pointer">
+                </div>
+            </div>
+        </div>
+
+        <div class="p-4 bg-slate-900 text-xs text-slate-500 text-center mt-auto border-t border-slate-700">
+            Usa el mouse para navegar en el mapa (pan/zoom).
+        </div>
+    </aside>
+
+    <!-- Contenedor Principal del Mapa -->
+    <main class="flex-grow relative h-full w-full">
+        <div id="map" class="w-full h-full"></div>
+    </main>
+
+    <script src="codigo.js"></script>
+
+</body>
+</html>
