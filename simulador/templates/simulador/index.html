@@ -12,7 +12,7 @@
     <!-- OpenLayers JS -->
     <script src="https://cdn.jsdelivr.net/npm/ol@v8.2.0/dist/ol.js"></script>
 
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body class="flex h-screen w-screen bg-slate-900 text-slate-200">
 
@@ -40,7 +40,7 @@
                     <label class="flex flex-col gap-1">Horas
                         <input id="horas" type="number" min="1" max="240" value="120" class="bg-slate-900 border border-slate-600 text-white p-2 rounded-lg"></label>
                     <label class="flex flex-col gap-1 col-span-2">Partículas
-                        <input id="n-particulas" type="number" min="1" max="5000" value="200" class="bg-slate-900 border border-slate-600 text-white p-2 rounded-lg"></label>
+                        <input id="n-particulas" type="number" min="1" max="800" value="200" class="bg-slate-900 border border-slate-600 text-white p-2 rounded-lg"></label>
                 </div>
                 <button id="btn-simular" class="bg-emerald-600 text-white p-3 rounded-lg hover:bg-emerald-500 transition-colors w-full font-semibold shadow-lg">Simular</button>
                 <p id="status" class="text-xs text-slate-400"></p>
@@ -91,7 +91,7 @@
         <div id="map" class="w-full h-full"></div>
     </main>
 
-    <script src="codigo.js"></script>
+    <script src="/static/codigo.js"></script>
 
 </body>
 </html>

@@ -1,0 +1,2 @@
+Coloca aqui salidadatos.txt (viento de SEMAR). Formato asumido: hora lon lat U V
+(ver WindField.from_file en simulador/modelo.py). dirmarea.txt aun no se usa (ver corriente_marina).

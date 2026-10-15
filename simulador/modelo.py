@@ -1,29 +1,15 @@
-"""
-Sistema de pronóstico de movimiento de derrames de hidrocarburos
-Sonda de Campeche - Backend FastAPI
-
-Modelo lagrangiano browniano (adaptación de Aguilera-Méndez et al., 2023):
-  ΔX = (u_sea + C_D·u_wind)·(1 − R·M)·Δt + N(0,1)·sqrt(2·K_h·Δt)
-
-Ejecutar:  uvicorn main:app --host 0.0.0.0 --port 8000
-Frontend:  http://localhost:8000/
-"""
 from __future__ import annotations
 
 import logging
 import math
+from functools import lru_cache
 import os
-from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Literal, Optional
 
 import numpy as np
-from fastapi import FastAPI, HTTPException, Query
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 
 log = logging.getLogger("derrames")
-logging.basicConfig(level=logging.INFO)
 
 # --------------------------------------------------------------------------
 # Constantes del modelo (fijadas por la especificación)
@@ -39,7 +25,7 @@ NODATA_THRESHOLD = -9.0e8     # -9.99e+08 => NaN (nunca velocidad cero)
 
 DENSIDADES = {"ligero": 830.0, "medio": 870.0, "pesado": 950.0}
 
-BASE = Path(__file__).parent
+BASE = Path(__file__).resolve().parent.parent
 DATA_DIR = Path(os.getenv("DATA_DIR", BASE / "data"))
 WIND_FILE = DATA_DIR / "salidadatos.txt"
 # dirmarea.txt (oleaje/marea): ver nota en `corriente_marina()`.
@@ -172,7 +158,7 @@ def simular(wind: WindField, lat_ini: float, lon_ini: float, rho: float,
 
     def snapshot(h):
         return {"hora": h, "particulas": [
-            {"lat": round(float(a), 5), "lon": round(float(b), 5)} for a, b in zip(lat, lon)]}
+            {"lat": round(float(a), 4), "lon": round(float(b), 4)} for a, b in zip(lat, lon)]}
 
     lista = [snapshot(0)]
     for step in range(horas * STEPS_PER_HOUR):
@@ -200,46 +186,13 @@ def simular(wind: WindField, lat_ini: float, lon_ini: float, rho: float,
 
 
 # --------------------------------------------------------------------------
-# API
-# --------------------------------------------------------------------------
-STATE: dict = {}
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
+@lru_cache(maxsize=1)
+def get_wind() -> Optional[WindField]:
+    """Carga única por instancia (cold start). None si no hay datos."""
     if WIND_FILE.exists():
-        STATE["wind"] = WindField.from_file(WIND_FILE)
-    elif DEMO_MODE:
+        return WindField.from_file(WIND_FILE)
+    if DEMO_MODE:
         log.warning("DEMO_MODE: viento sintético uniforme, SIN datos reales.")
-        STATE["wind"] = WindField.demo()
-    else:
-        log.error("No existe %s (use DEMO_MODE=1 solo para pruebas).", WIND_FILE)
-    yield
-
-
-app = FastAPI(title="Derrames de hidrocarburos - Sonda de Campeche", lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET"], allow_headers=["*"])
-
-
-@app.get("/api/simular")
-def api_simular(
-    lat_ini: float = Query(19.85, ge=18.0, le=22.5),
-    lon_ini: float = Query(-90.55, ge=-95.0, le=-89.0),
-    tipo_crudo: Literal["ligero", "medio", "pesado"] = "medio",
-    horas: int = Query(120, ge=1, le=240),
-    n_particulas: int = Query(200, ge=1, le=5000),
-    kh: float = Query(KH_DEFAULT, gt=0, le=KH_MAX, description="Difusión turbulenta m²/s"),
-    seed: Optional[int] = None,
-):
-    wind = STATE.get("wind")
-    if wind is None:
-        raise HTTPException(503, f"Campo de viento no disponible: falta {WIND_FILE}")
-    return simular(wind, lat_ini, lon_ini, DENSIDADES[tipo_crudo], horas, n_particulas, kh, seed=seed)
-
-
-@app.get("/api/salud")
-def salud():
-    return {"viento_cargado": "wind" in STATE, "demo": bool(STATE.get("wind") and STATE["wind"].demo)}
-
-
-app.mount("/", StaticFiles(directory=BASE / "static", html=True), name="static")
+        return WindField.demo()
+    log.error("No existe %s (use DEMO_MODE=1 solo para pruebas).", WIND_FILE)
+    return None

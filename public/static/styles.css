@@ -1,0 +1,21 @@
+
+body {
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+.ol-control {
+    background-color: rgba(255,255,255,0.4);
+    border-radius: 4px;
+    padding: 2px;
+}
+
+.ol-zoom {
+    top: .5em;
+    right: .5em;
+    left: auto;
+}
+
+
